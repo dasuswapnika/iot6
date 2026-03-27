@@ -1,0 +1,299 @@
+Week 6
+
+#include <ESP8266WiFi.h>
+String apiKey = "xxx";     
+const char *ssid =  "xxx";     
+const char *pass =  "xxx";
+const char* server = "api.thingspeak.com";
+#define IRpin D2         
+WiFiClient client;
+int value; 
+void setup() 
+{
+Serial.begin(115200);
+pinMode(IRpin, INPUT); 
+delay(1000);
+Serial.println("Connecting to ");
+Serial.println(ssid);
+WiFi.begin(ssid, pass);
+while (WiFi.status() != WL_CONNECTED)
+{
+delay(2000);
+Serial.print(".");
+}
+Serial.println("   ");
+Serial.println("WiFi connected");
+}
+void loop(){
+ value = digitalRead(IRpin);           
+Serial.println(value);
+  if(value==0) 
+  {
+  Serial.print("object detected");
+  }
+  else
+  {
+  Serial.print("no object detected");
+  }
+if (client.connect(server,80))   
+{
+String postStr = apiKey;
+postStr +="&field1=";
+postStr += String(value);
+postStr += "\r\n\r\n";
+
+client.print("POST /update HTTP/1.1\n");
+client.print("Host: api.thingspeak.com\n");
+client.print("Connection: close\n");
+client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+client.print("Content-Type: application/x-www-form-urlencoded\n");
+client.print("Content-Length: ");
+client.print(postStr.length());
+client.print("\n\n");
+client.print(postStr);
+client.stop();
+Serial.println("Waiting...");
+delay(1000); }}
+
+
+
+
+
+=======================================================================
+week 7
+#include <DHT.h>
+#include <DHT_U.h>
+#include <ESP8266WiFi.h>
+String apiKey = "ZYUP9R7N15OEBYRO";  // 
+const char *ssid =  "xxx"; 
+const char *pass =  "xxx";
+const char* server = "api.thingspeak.com";
+#define DHTPIN D3
+DHT dht(DHTPIN, DHT11);
+WiFiClient client;
+
+ void setup() 
+{
+  Serial.begin(115200);
+  delay(1000);
+  dht.begin();
+  Serial.println("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) 
+  {
+    delay(2000);
+    Serial.print(".");
+  }
+Serial.println("");
+Serial.println("WiFi connected");
+}
+void loop() 
+{
+ float h = dht.readHumidity();
+ float t = dht.readTemperature();
+ if (isnan(h) || isnan(t)) 
+ {
+  Serial.println("Failed to read from DHT sensor!");
+  return;
+ }
+if (client.connect(server,80))   //   "184.106.153.149" or api.thingspeak.com
+{                      
+  String postStr = apiKey;
+  postStr +="&field1=";
+  postStr += String(t);
+  postStr +="&field2=";
+  postStr += String(h);
+  postStr += "\r\n\r\n";
+client.print("POST /update HTTP/1.1\n");
+client.print("Host: api.thingspeak.com\n");
+client.print("Connection: close\n");
+client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+client.print("Content-Type: application/x-www-form-urlencoded\n");
+client.print("Content-Length: ");
+client.print(postStr.length());
+client.print("\n\n");
+client.print(postStr);
+Serial.print("Temperature: ");
+Serial.print(t);
+Serial.print(" degrees Celcius, Humidity: ");
+Serial.print(h);
+Serial.println("%. Send to Thingspeak.");
+}
+  client.stop();
+  Serial.println("Waiting...");
+  delay(1000);
+}
+
+===============================================================================
+
+week8 
+#include "ThingSpeak.h"
+#include <ESP8266WiFi.h>
+#include<DHT.h>
+const char ssid[] = "xxx";  // your network SSID (name)
+const char pass[] = "xxx";   // your network password        
+int statusCode = 0;
+WiFiClient  client;
+
+//---------Channel Details---------//
+unsigned long counterChannelNumber =  2846266;            // Channel ID
+const char * myCounterReadAPIKey = "SXJMCVLJWIZMZLLF"; // Read API Key
+const int FieldNumber1 = 1;  // The field you wish to read
+const int FieldNumber2 = 2;  // The field you wish to read
+//-------------------------------//
+
+void setup()
+{
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  ThingSpeak.begin(client);
+}
+
+void loop()
+{
+  //----------------- Network -----------------//
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print("Connecting to ");
+    Serial.print(ssid);
+    Serial.println(" ....");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      WiFi.begin(ssid, pass);
+      delay(5000);
+    }
+    Serial.println("Connected to Wi-Fi Succesfully.");
+  }
+  //--------- End of Network connection--------//
+
+  //---------------- Channel 1 ----------------//
+  long temp = ThingSpeak.readLongField(counterChannelNumber, FieldNumber1, myCounterReadAPIKey);
+  statusCode = ThingSpeak.getLastReadStatus();
+  if (statusCode == 200)
+  {
+    Serial.print("Temperature: ");
+    Serial.println(temp);
+  }
+  else
+  {
+    Serial.println("Unable to read channel / No internet connection");
+  }
+  delay(100);
+  //-------------- End of Channel 1 -------------//
+
+  //---------------- Channel 2 ----------------//
+  long humidity = ThingSpeak.readLongField(counterChannelNumber, FieldNumber2, myCounterReadAPIKey);
+  statusCode = ThingSpeak.getLastReadStatus();
+  if (statusCode == 200)
+  {
+    Serial.print("Humidity: ");
+    Serial.println(humidity);
+  }
+  else
+  {
+    Serial.println("Unable to read channel / No internet connection");
+  }
+  delay(100);
+  //-------------- End of Channel 2 -------------//
+}
+
+
+
+
+=======================================================================
+
+week 9
+#include "ESP8266WiFi.h"
+#include "DHT.h"
+const char* ssid="Galaxy A21sE600";
+const char* password ="zilh8480";
+WiFiServer wifiServer(8080);
+DHT dht(D3, DHT22); 
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting..");
+  }
+  Serial.print("Connected to WiFi. IP:");
+  Serial.println(WiFi.localIP());
+  wifiServer.begin();
+  dht.begin();
+}
+ 
+void loop() {
+   WiFiClient client = wifiServer.available();
+   if (client) {
+     while (client.connected()) {
+       while (client.available()>0) {
+        float t=dht.readTemperature();
+        float h = dht.readHumidity();
+        client.print("humidity :");
+        client.print("temperature :");
+        client.println(h);
+        Serial.println(h);
+        client.println(t);
+        Serial.println(t);
+        delay(2000);
+      }
+    }
+    client.stop();
+    Serial.println("Client disconnected");
+  }
+}
+
+
+=======================================================================
+week 10
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <DHT.h>
+const char* ssid = "Galaxy A21sE600";
+const char* password = "zilh8480";
+const char* udpAddress = "192.168.87.225";
+const int udpPort = 1234;
+#define DHTPIN D3 
+#define DHTTYPE DHT22  
+DHT dht(DHTPIN, DHTTYPE);
+WiFiUDP udp;
+void setup() {
+  Serial.begin(115200);
+  Serial.println();
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(2000);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.println("WiFi connected.");
+  dht.begin();
+}
+void loop() {
+  delay(2000);
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  if (isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(" °C\tHumidity: ");
+  Serial.print(humidity);
+  Serial.println(" %");
+  Serial.println("Sending data over UDP...");
+  udp.beginPacket(udpAddress, udpPort);
+  udp.print("Temperature: ");
+  udp.print(temperature);
+  udp.print(" °C, Humidity: ");
+  udp.print(humidity);
+  udp.println(" %");
+  udp.endPacket();
+  Serial.println("Data sent over UDP.");
+}
+
+
